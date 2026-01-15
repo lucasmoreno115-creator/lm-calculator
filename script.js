@@ -1,71 +1,58 @@
 // ===============================
-// LM CALCULATOR — DEBUG CORE
+// LM CALCULATOR — APP ADAPTER v0.9
 // ===============================
+// Este arquivo NÃO contém regras científicas.
+// Ele apenas conecta o formulário ao core LM Score.
 
-document.getElementById("calcBtn").addEventListener("click", handleCalculate);
+import { calculateLMScore } from "./core/lmScoreEngine.js";
 
+document
+  .getElementById("calcBtn")
+  .addEventListener("click", handleCalculate);
+
+// -------------------------------
+// Controller principal
+// -------------------------------
 function handleCalculate() {
   const data = collectFormData();
-  const result = runLMScore(data);
+  const result = calculateLMScore(data);
   renderResult(result);
 }
 
 // -------------------------------
-// Coleta de dados
+// Coleta de dados (compatível com o core)
 // -------------------------------
 function collectFormData() {
+  const bodyFatValue = document.getElementById("bodyFat").value;
+
   return {
     sex: document.getElementById("sex").value,
     age: Number(document.getElementById("age").value),
     weight: Number(document.getElementById("weight").value),
     height: Number(document.getElementById("height").value),
-    bodyFat: Number(document.getElementById("bodyFat").value || 0),
-    activity: document.getElementById("activityLevel").value,
-    frequency: Number(document.getElementById("trainingFrequency").value),
-    strength: document.getElementById("strengthTraining").checked,
+
+    // Só envia bodyFat se o usuário preencher
+    bodyFat: bodyFatValue ? Number(bodyFatValue) : undefined,
+
+    activityLevel: document.getElementById("activityLevel").value,
+    trainingFrequency: Number(
+      document.getElementById("trainingFrequency").value
+    ),
+    strengthTraining:
+      document.getElementById("strengthTraining").checked,
+
     expectation: document.getElementById("expectation").value
   };
 }
 
 // -------------------------------
-// LM Score (provisório)
-// -------------------------------
-function runLMScore(data) {
-  let score = 100;
-  let reasons = [];
-
-  if (data.activity === "sedentary") {
-    score -= 25;
-    reasons.push("Sedentarismo reduz eficiência metabólica.");
-  }
-
-  if (data.frequency < 3) {
-    score -= 15;
-    reasons.push("Baixa frequência de treino.");
-  }
-
-  if (data.expectation === "fast") {
-    score -= 20;
-    reasons.push("Expectativa agressiva aumenta risco de frustração.");
-  }
-
-  if (score < 0) score = 0;
-
-  return {
-    score,
-    classification:
-      score >= 80 ? "Baixo risco metabólico" :
-      score >= 50 ? "Risco metabólico moderado" :
-      "Alto risco metabólico",
-    reasons
-  };
-}
-
-// -------------------------------
-// Renderização
+// Renderização do resultado
 // -------------------------------
 function renderResult(result) {
-  document.getElementById("result").style.display = "block";
+  const resultDiv = document.getElementById("result");
+  if (!resultDiv) return;
+
+  resultDiv.style.display = "block";
 
   document.getElementById("score").textContent =
     `LM Score: ${result.score}`;
@@ -74,8 +61,12 @@ function renderResult(result) {
     result.classification;
 
   document.getElementById("mainFactor").textContent =
-    result.reasons.join(" ");
+    result.reasons.length
+      ? result.reasons.join(" ")
+      : "Nenhum fator de risco relevante identificado.";
 
-  document.getElementById("debug").textContent =
-    JSON.stringify(result, null, 2);
+  const debugEl = document.getElementById("debug");
+  if (debugEl) {
+    debugEl.textContent = JSON.stringify(result, null, 2);
+  }
 }
