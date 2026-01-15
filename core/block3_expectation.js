@@ -1,1 +1,65 @@
-v0.8 - Bloco 3: análise de expectativa e adesão
+/**
+ * BLOCO 3 — EXPECTATIVA & ADESÃO (até 30 pts)
+ *
+ * Implementa o lock:
+ * - Expectativa rápida sempre penaliza
+ * - Penaliza mais quando combinada com baixa atividade
+ * - Pode virar “incompatível” (penalização máxima)
+ */
+
+export function block3Expectation(d, b1, b2) {
+  let penalty = 0;
+  const reasons = [];
+
+  const isFast = d.expectation === "fast";
+  if (!isFast) {
+    return {
+      penalty: 0,
+      reasons: [],
+      meta: { expectation: d.expectation }
+    };
+  }
+
+  // Base
+  penalty += 10;
+  reasons.push("Expectativa agressiva aumenta risco de frustração e abandono.");
+
+  // Contexto de baixa atividade
+  const lowActivityContext =
+    d.activityLevel === "sedentary" || d.trainingFrequency < 3;
+
+  if (lowActivityContext) {
+    penalty += 10;
+    reasons.push(
+      "Expectativa rápida com baixa atividade reduz previsibilidade e aumenta risco de falha."
+    );
+  }
+
+  // Incompatível = combinação “ruim + ruim”
+  const incompatible =
+    d.activityLevel === "sedentary" && d.trainingFrequency < 3;
+
+  if (incompatible) {
+    penalty = 30;
+    reasons.push(
+      "Expectativa incompatível com o nível atual: primeiro estabilizar rotina e consistência."
+    );
+  }
+
+  // Teto do bloco
+  penalty = Math.min(penalty, 30);
+
+  return {
+    penalty,
+    reasons,
+    meta: {
+      expectation: d.expectation,
+      lowActivityContext,
+      incompatible,
+      penaltiesSoFar: {
+        block1: b1?.penalty ?? null,
+        block2: b2?.penalty ?? null
+      }
+    }
+  };
+}
