@@ -1,7 +1,8 @@
 /**
- * BLOCO 1 — COMPOSIÇÃO CORPORAL (até 35 pts de penalização)
- *
- * Implementa o lock v0.7:
+* BLOCO 1 - COMPOSIÇÃO CORPORAL (até 35pts de penalização)
+*/
+
+* Implementa o lock v0.7:
  * - Penaliza risco metabólico estrutural
  * - Não premia BF baixo
  */
