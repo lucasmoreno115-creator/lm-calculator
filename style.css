@@ -96,3 +96,7 @@ pre{
   overflow:auto;
   font-size:0.85rem;
 }
+
+#mainFactor { 
+  white-space: pre-line; 
+}
