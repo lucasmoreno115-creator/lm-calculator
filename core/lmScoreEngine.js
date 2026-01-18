@@ -13,6 +13,7 @@
 import { block1BodyComposition } from "./block1_bodyComposition.js";
 import { block2Activity } from "./block2_activity.js";
 import { block3Expectation } from "./block3_expectation.js";
+import { LM_WEIGHTS_V12 } from "./weights.config.js";
 
 export const LM_CORE_VERSION = "0.8.1";
 
