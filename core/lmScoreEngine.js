@@ -1,5 +1,5 @@
 /**
- * LM SCORE ENGINE (v0.8.1 compat / v0.9 adapter-safe)
+ * LM SCORE ENGINE (v0.8.1 compat / v0.9 adapter-safe / v1.2 weights)
  * Fonte da verdade do LM Score.
  *
  * Regras travadas:
@@ -8,6 +8,11 @@
  * - Score mínimo 40
  * - Penalização máxima 60
  * - Sempre retorna razões educacionais
+ *
+ * v1.2 (arquitetura):
+ * - Adiciona pesos configuráveis por bloco via weights.config.js
+ * - Modo "legacy" permanece DEFAULT (não altera regressão)
+ * - Modo "block-weighted" é opcional e auditável (debug)
  */
 
 import { block1BodyComposition } from "./block1_bodyComposition.js";
@@ -15,28 +20,66 @@ import { block2Activity } from "./block2_activity.js";
 import { block3Expectation } from "./block3_expectation.js";
 import { LM_WEIGHTS_V12 } from "./weights.config.js";
 
-export const LM_CORE_VERSION = "0.8.1";
+export const LM_CORE_VERSION = "0.8.2";
 
-export function calculateLMScore(input) {
-  // Executa blocos isolados
+/**
+ * API pública do core
+ * @param {object} input
+ * @param {object} [options]
+ * @param {"legacy"|"block-weighted"} [options.mode]
+ */
+export function calculateLMScore(input, options = {}) {
+  const mode = options.mode || "legacy";
+
+  // 1) Executa blocos isolados (ciência está nos blocos)
   const b1 = block1BodyComposition(input);
   const b2 = block2Activity(input);
   const b3 = block3Expectation(input, b1, b2);
 
-  // Penalização total com teto (60) e piso do score (40)
-  const totalPenalty = clamp(b1.penalty + b2.penalty + b3.penalty, 0, 60);
+  // 2) Penalizações
+  const p1 = Number.isFinite(b1.penalty) ? b1.penalty : 0;
+  const p2 = Number.isFinite(b2.penalty) ? b2.penalty : 0;
+  const p3 = Number.isFinite(b3.penalty) ? b3.penalty : 0;
+
+  const blocks = {
+    body: b1,
+    activity: b2,
+    expectation: b3,
+  };
+
+  // LEGACY: soma simples (comportamento travado)
+  const totalPenaltyLegacy = p1 + p2 + p3;
+
+  // BLOCK-WEIGHTED: aplica pesos externos sem mexer nos blocos
+  const totalPenaltyRaw =
+    mode === "block-weighted"
+      ? applyWeightsToPenalties(blocks)
+      : totalPenaltyLegacy;
+
+  // 3) Penalização total com teto (60) e piso do score (40)
+  const totalPenalty = clamp(totalPenaltyRaw, 0, 60);
   const score = clamp(100 - totalPenalty, 40, 100);
 
   return {
     version: LM_CORE_VERSION,
+    mode,
+    weightsVersion: LM_WEIGHTS_V12?.version || "none",
+
     score,
     classification: classify(score),
-    reasons: [...b1.reasons, ...b2.reasons, ...b3.reasons],
+
+    // Razões educacionais (flat)
+    reasons: [
+      ...(Array.isArray(b1.reasons) ? b1.reasons : []),
+      ...(Array.isArray(b2.reasons) ? b2.reasons : []),
+      ...(Array.isArray(b3.reasons) ? b3.reasons : []),
+    ],
+
+    // Debug por bloco + totais
     blocks: {
-      body: b1,
-      activity: b2,
-      expectation: b3,
+      ...blocks,
       totalPenalty,
+      totalPenaltyLegacy,
     },
   };
 }
@@ -53,6 +96,10 @@ function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+/**
+ * Normaliza pesos do config para somar 1.0
+ * - Se config estiver incompleta/zerada: fallback para pesos iguais
+ */
 function getNormalizedWeights(blockKeys) {
   const cfg = (LM_WEIGHTS_V12 && LM_WEIGHTS_V12.blocks) ? LM_WEIGHTS_V12.blocks : {};
   const weights = {};
@@ -78,30 +125,37 @@ function getNormalizedWeights(blockKeys) {
 }
 
 /**
- * Agregação ponderada por penalidade (compatível com engine punitivo).
- * Mantém a lógica: score parte de 100 e só penaliza.
+ * v1.2 — Agregação ponderada por penalidade (engine punitivo).
  *
- * Ideia:
- * - Cada bloco calcula penalty (0..maxPenalty do bloco)
- * - Aqui ponderamos o impacto de cada bloco pela config
- * - Importante: isso muda score se você trocar o modo default.
- *   Então v1.2 deve introduzir isso APENAS como modo opcional.
+ * Requisito importante:
+ * - Pesos no config somam 1.0
+ * - Para que "pesos iguais" reproduzam exatamente o LEGACY,
+ *   multiplicamos por N (número de blocos).
+ *
+ * Ex:
+ * - weights iguais = 1/3 cada
+ * - total = 3 * (p1*(1/3) + p2*(1/3) + p3*(1/3)) = p1+p2+p3 (LEGACY)
+ *
+ * Isso permite calibrar pesos sem mudar ciência dos blocos.
  */
 function applyWeightsToPenalties(blocks) {
   const keys = Object.keys(blocks);
   const { weights } = getNormalizedWeights(keys);
 
-  let totalPenaltyWeighted = 0;
+  const N = keys.length;
+  let weightedSum = 0;
 
   for (const k of keys) {
     const b = blocks[k] || {};
     const penalty = Number.isFinite(b.penalty) ? b.penalty : 0;
 
     const w = weights[k];
-    b.weightApplied = w; // telemetria/QA
 
-    totalPenaltyWeighted += penalty * w;
+    // Telemetria/QA: registra peso aplicado no bloco
+    b.weightApplied = w;
+
+    weightedSum += penalty * w;
   }
 
-  return totalPenaltyWeighted;
+  return N * weightedSum;
 }
