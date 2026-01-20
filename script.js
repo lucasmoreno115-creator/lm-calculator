@@ -8,6 +8,8 @@
 
 import { calculateLMScore } from "./core/lmScoreEngine.js";
 import { LM_COPY_V11 } from "./core/lmCopy_v1_1.js";
+import { LM_REASON_MAP_V13 } from "./core/lmReasonMap_v1_3.js";
+import { LM_REASON_COPY_V13 } from "./core/lmReasonCopy_v1_3.js";
 
 const els = {
   calcBtn: document.getElementById("calcBtn"),
@@ -93,13 +95,15 @@ function buildEducationalText(result) {
   // Fallback seguro (se copy faltar por algum motivo)
   if (!band) {
     return result.reasons?.length
-      ? result.reasons.join(" ")
+      ? result.reasons.map((reason) => getReasonText(reason)).join(" ")
       : "Nenhum fator de risco relevante identificado.";
   }
 
   // Mostra 1–2 razões principais (se existirem), para não ficar genérico
   const topReasons = Array.isArray(result.reasons) ? result.reasons.slice(0, 2) : [];
-  const reasonsLine = topReasons.length ? `Principal fator: ${topReasons.join(" ")}` : null;
+  const reasonsLine = topReasons.length
+    ? `Principal fator: ${topReasons.map((reason) => getReasonText(reason)).join(" ")}`
+    : null;
 
   const nextSteps = band.nextSteps.map((s) => `• ${s}`).join("\n");
 
@@ -153,7 +157,9 @@ function buildPenaltyCard(label, block) {
 
   const penalty = Number.isFinite(block.penalty) ? block.penalty : 0;
   const reasons = Array.isArray(block.reasons) ? block.reasons : [];
-  const reasonsText = reasons.length ? reasons.join(" ") : "Sem penalizações relevantes.";
+  const reasonsContent = reasons.length
+    ? reasons.map((reason) => renderReason(reason)).join("")
+    : `<div class="penaltyMeta">Sem penalizações relevantes.</div>`;
 
   return `
     <div class="penaltyCard">
@@ -161,9 +167,37 @@ function buildPenaltyCard(label, block) {
         <span>${escapeHtml(label)}</span>
         <span class="penaltyScore">-${penalty} pts</span>
       </div>
-      <div class="penaltyMeta">${escapeHtml(reasonsText)}</div>
+      <div class="penaltyReasons">${reasonsContent}</div>
     </div>
   `;
+}
+
+function renderReason(reason) {
+  const reasonText = getReasonText(reason);
+  const reasonCode = typeof reason === "object" && reason ? reason.code : null;
+  const code = reasonCode || LM_REASON_MAP_V13?.[reasonText];
+  const reasonCopy = code ? LM_REASON_COPY_V13?.reasons?.[code] : null;
+
+  if (!reasonCopy) {
+    return `<div class="penaltyMeta">${escapeHtml(reasonText)}</div>`;
+  }
+
+  return `
+    <div class="penaltyReason">
+      <div class="penaltyReasonTitle">${escapeHtml(reasonCopy.title)}</div>
+      <div class="penaltyMeta">${escapeHtml(reasonCopy.explanation)}</div>
+      <div class="penaltyMeta"><strong>Impacto:</strong> ${escapeHtml(reasonCopy.impact)}</div>
+      <div class="penaltyMeta"><strong>Evite:</strong> ${escapeHtml(reasonCopy.dontDo)}</div>
+    </div>
+  `;
+}
+
+function getReasonText(reason) {
+  if (typeof reason === "string") return reason;
+  if (reason && typeof reason === "object") {
+    return typeof reason.text === "string" ? reason.text : String(reason.text ?? "");
+  }
+  return String(reason ?? "");
 }
 
 function escapeHtml(str) {
