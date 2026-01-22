@@ -89,16 +89,19 @@ function pickBand(score) {
 
 function buildEducationalText(result) {
   const band = pickBand(result.score);
+  const reasonTexts = Array.isArray(result.reasons)
+    ? result.reasons.map(getReasonText).filter(Boolean)
+    : [];
 
   // Fallback seguro (se copy faltar por algum motivo)
   if (!band) {
-    return result.reasons?.length
-      ? result.reasons.join(" ")
+    return reasonTexts.length
+      ? reasonTexts.join(" ")
       : "Nenhum fator de risco relevante identificado.";
   }
 
   // Mostra 1–2 razões principais (se existirem), para não ficar genérico
-  const topReasons = Array.isArray(result.reasons) ? result.reasons.slice(0, 2) : [];
+  const topReasons = reasonTexts.slice(0, 2);
   const reasonsLine = topReasons.length ? `Principal fator: ${topReasons.join(" ")}` : null;
 
   const nextSteps = band.nextSteps.map((s) => `• ${s}`).join("\n");
@@ -153,7 +156,10 @@ function buildPenaltyCard(label, block) {
 
   const penalty = Number.isFinite(block.penalty) ? block.penalty : 0;
   const reasons = Array.isArray(block.reasons) ? block.reasons : [];
-  const reasonsText = reasons.length ? reasons.join(" ") : "Sem penalizações relevantes.";
+  const reasonTexts = reasons.map(getReasonText).filter(Boolean);
+  const reasonCodes = reasons.map(getReasonCode).filter(Boolean).join(",");
+  const reasonsText = reasonTexts.length ? reasonTexts.join(" ") : "Sem penalizações relevantes.";
+  const reasonCodesAttr = reasonCodes ? ` data-reason-codes="${escapeHtml(reasonCodes)}"` : "";
 
   return `
     <div class="penaltyCard">
@@ -161,9 +167,24 @@ function buildPenaltyCard(label, block) {
         <span>${escapeHtml(label)}</span>
         <span class="penaltyScore">-${penalty} pts</span>
       </div>
-      <div class="penaltyMeta">${escapeHtml(reasonsText)}</div>
+      <div class="penaltyMeta"${reasonCodesAttr}>${escapeHtml(reasonsText)}</div>
     </div>
   `;
+}
+
+function getReasonText(reason) {
+  if (typeof reason === "string") return reason;
+  if (reason && typeof reason === "object" && typeof reason.message === "string") {
+    return reason.message;
+  }
+  return "";
+}
+
+function getReasonCode(reason) {
+  if (reason && typeof reason === "object" && typeof reason.code === "string") {
+    return reason.code;
+  }
+  return "";
 }
 
 function escapeHtml(str) {
