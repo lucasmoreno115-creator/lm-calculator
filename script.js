@@ -179,13 +179,16 @@ function formatReasonText(reason) {
     if (!reason.code) {
       console.warn("[LM] Reason object missing code:", reason);
     }
+    if (reason.message === undefined) {
+      console.warn("[LM] Reason object missing message:", reason);
+    }
 
     return typeof reason.message === "string" ? reason.message : "";
   }
 
   if (typeof reason === "string") {
     // DEPRECATED (v1.5): fallback por texto será removido quando 100% dos reasons vierem com code do core.
-    return reason;
+    return reason.trim() ? reason : "";
   }
 
   return "";
@@ -198,6 +201,9 @@ function buildReasonsHtml(reasons) {
         if (!reason.code) {
           console.warn("[LM] Reason object missing code:", reason);
         }
+        if (reason.message === undefined) {
+          console.warn("[LM] Reason object missing message:", reason);
+        }
 
         const message = typeof reason.message === "string" ? reason.message : "";
         const codeAttr = reason.code ? ` data-reason-code="${escapeHtml(reason.code)}"` : "";
@@ -207,7 +213,7 @@ function buildReasonsHtml(reasons) {
 
       if (typeof reason === "string") {
         // DEPRECATED (v1.5): fallback por texto será removido quando 100% dos reasons vierem com code do core.
-        return `<span>${escapeHtml(reason)}</span>`;
+        return reason.trim() ? `<span>${escapeHtml(reason)}</span>` : "";
       }
 
       return "";
@@ -269,7 +275,11 @@ function renderDebugPayload(payload) {
     debugEl = document.createElement("pre");
     debugEl.id = "lm-debug";
     debugEl.style.display = "none";
-    els.result.appendChild(debugEl);
+    try {
+      els.result.appendChild(debugEl);
+    } catch (error) {
+      return;
+    }
   }
 
   debugEl.textContent = JSON.stringify(payload, null, 2);
@@ -285,13 +295,19 @@ function renderResult(result) {
   els.score.textContent = String(result.score);
   els.classification.textContent = result.classification;
 
+  if (!Array.isArray(result?.reasons)) {
+    console.warn("[LM] Result reasons is not an array:", result?.reasons);
+  }
+  const reasonsArray = Array.isArray(result?.reasons) ? result.reasons : [];
+  const normalizedResult = { ...result, reasons: reasonsArray };
+
   // v1.1: texto educacional + principal fator
-  els.mainFactor.textContent = buildEducationalText(result);
+  els.mainFactor.textContent = buildEducationalText(normalizedResult);
 
   // Transparência: penalizações por bloco
-  renderPenalties(result);
+  renderPenalties(normalizedResult);
 
-  const reasonSummary = extractReasonCodes(result.reasons);
+  const reasonSummary = extractReasonCodes(reasonsArray);
   const codeCounts = buildCodeHistogram(reasonSummary.codes);
   const debugPayload = {
     score: result.score,
@@ -303,9 +319,13 @@ function renderResult(result) {
     version: result.version || "v1.6-ui-observability",
   };
 
-  console.groupCollapsed("[LM] Debug payload");
-  console.log(debugPayload);
-  console.groupEnd();
+  try {
+    console.groupCollapsed("[LM] Debug payload");
+    console.log(debugPayload);
+    console.groupEnd();
+  } catch (error) {
+    // noop
+  }
 
   renderDebugPayload({
     score: debugPayload.score,
