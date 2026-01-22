@@ -70,9 +70,9 @@ export function calculateLMScore(input, options = {}) {
 
     // Razões educacionais (flat)
     reasons: [
-      ...(Array.isArray(b1.reasons) ? b1.reasons : []),
-      ...(Array.isArray(b2.reasons) ? b2.reasons : []),
-      ...(Array.isArray(b3.reasons) ? b3.reasons : []),
+      ...normalizeReasons(b1.reasons),
+      ...normalizeReasons(b2.reasons),
+      ...normalizeReasons(b3.reasons),
     ],
 
     // Debug por bloco + totais
@@ -94,6 +94,18 @@ function classify(score) {
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
+}
+
+function normalizeReasons(reasons) {
+  if (Array.isArray(reasons)) {
+    return reasons.filter(
+      (reason) => typeof reason === "string" || (reason && typeof reason === "object")
+    );
+  }
+
+  if (typeof reasons === "string") return [reasons];
+  if (reasons && typeof reasons === "object") return [reasons];
+  return [];
 }
 
 /**
