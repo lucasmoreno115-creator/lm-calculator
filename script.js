@@ -175,48 +175,38 @@ function getReasonTexts(reasons) {
 }
 
 function formatReasonText(reason) {
-  if (reason && typeof reason === "object") {
-    if (!reason.code) {
-      console.warn("[LM] Reason object missing code:", reason);
-    }
-    if (reason.message === undefined) {
-      console.warn("[LM] Reason object missing message:", reason);
-    }
-
-    return typeof reason.message === "string" ? reason.message : "";
+  if (!reason || typeof reason !== "object") {
+    throw new Error("[LM] Invalid reason format in v2.0");
   }
 
-  if (typeof reason === "string") {
-    // DEPRECATED (v1.5): fallback por texto será removido quando 100% dos reasons vierem com code do core.
-    return reason.trim() ? reason : "";
+  if (typeof reason.code !== "string" || reason.code.length === 0) {
+    throw new Error("[LM] Invalid reason format in v2.0");
   }
 
-  return "";
+  if (typeof reason.message !== "string" || reason.message.length === 0) {
+    throw new Error("[LM] Invalid reason format in v2.0");
+  }
+
+  return reason.message;
 }
 
 function buildReasonsHtml(reasons) {
   return (Array.isArray(reasons) ? reasons : [])
     .map((reason) => {
-      if (reason && typeof reason === "object") {
-        if (!reason.code) {
-          console.warn("[LM] Reason object missing code:", reason);
-        }
-        if (reason.message === undefined) {
-          console.warn("[LM] Reason object missing message:", reason);
-        }
-
-        const message = typeof reason.message === "string" ? reason.message : "";
-        const codeAttr = reason.code ? ` data-reason-code="${escapeHtml(reason.code)}"` : "";
-
-        return `<span${codeAttr}>${escapeHtml(message)}</span>`;
+      if (!reason || typeof reason !== "object") {
+        throw new Error("[LM] Invalid reason format in v2.0");
       }
 
-      if (typeof reason === "string") {
-        // DEPRECATED (v1.5): fallback por texto será removido quando 100% dos reasons vierem com code do core.
-        return reason.trim() ? `<span>${escapeHtml(reason)}</span>` : "";
+      if (typeof reason.code !== "string" || reason.code.length === 0) {
+        throw new Error("[LM] Invalid reason format in v2.0");
       }
 
-      return "";
+      if (typeof reason.message !== "string" || reason.message.length === 0) {
+        throw new Error("[LM] Invalid reason format in v2.0");
+      }
+
+      const codeAttr = ` data-reason-code="${escapeHtml(reason.code)}"`;
+      return `<span${codeAttr}>${escapeHtml(reason.message)}</span>`;
     })
     .filter((reasonHtml) => reasonHtml !== "")
     .join(" ");
@@ -234,8 +224,6 @@ function escapeHtml(str) {
 function extractReasonCodes(reasons) {
   const summary = {
     codes: [],
-    missingCodeCount: 0,
-    stringFallbackCount: 0,
   };
 
   if (!Array.isArray(reasons)) {
@@ -243,18 +231,19 @@ function extractReasonCodes(reasons) {
   }
 
   reasons.forEach((reason) => {
-    if (reason && typeof reason === "object") {
-      if (typeof reason.code === "string" && reason.code.length > 0) {
-        summary.codes.push(reason.code);
-      } else {
-        summary.missingCodeCount += 1;
-      }
-      return;
+    if (!reason || typeof reason !== "object") {
+      throw new Error("[LM] Invalid reason format in v2.0");
     }
 
-    if (typeof reason === "string") {
-      summary.stringFallbackCount += 1;
+    if (typeof reason.code !== "string" || reason.code.length === 0) {
+      throw new Error("[LM] Invalid reason format in v2.0");
     }
+
+    if (typeof reason.message !== "string" || reason.message.length === 0) {
+      throw new Error("[LM] Invalid reason format in v2.0");
+    }
+
+    summary.codes.push(reason.code);
   });
 
   return summary;
@@ -314,8 +303,6 @@ function renderResult(result) {
     riskLabel: result.classification,
     codes: reasonSummary.codes,
     counts: codeCounts,
-    missingCodeCount: reasonSummary.missingCodeCount,
-    stringFallbackCount: reasonSummary.stringFallbackCount,
     version: result.version || "v1.6-ui-observability",
   };
 
