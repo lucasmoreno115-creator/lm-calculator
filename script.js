@@ -21,6 +21,13 @@ const els = {
   resultDate: document.getElementById("resultDate"),
   topImpacts: document.getElementById("topImpacts"),
   groupedReasons: document.getElementById("groupedReasons"),
+  reportBtn: document.getElementById("reportBtn"),
+  reportDate: document.getElementById("reportDate"),
+  reportScore: document.getElementById("reportScore"),
+  reportClassification: document.getElementById("reportClassification"),
+  reportTopImpacts: document.getElementById("reportTopImpacts"),
+  reportGroups: document.getElementById("reportGroups"),
+  reportFooterDate: document.getElementById("reportFooterDate"),
   debug: document.getElementById("debug"),
 };
 
@@ -36,6 +43,12 @@ els.calcBtn.addEventListener("click", () => {
   const result = calculateLMScore(data);
   renderResult(result);
 });
+
+if (els.reportBtn) {
+  els.reportBtn.addEventListener("click", () => {
+    window.print();
+  });
+}
 
 // -------------------------------
 // Coleta de dados (UI -> core)
@@ -375,6 +388,52 @@ function renderReasonGroups(items) {
     .join("");
 }
 
+function renderReportReasonList(items) {
+  if (!items.length) {
+    return `<div class="reportGroup"><div class="muted">Nenhum motivo identificado.</div></div>`;
+  }
+
+  return items
+    .map((item) => {
+      const impactoLabel = item.impacto === "—" ? "Impacto indisponível" : `Impacto: ${item.impacto}`;
+
+      return `
+        <div class="reportItem">
+          <div class="reportBadgeRow">
+            <span class="badge">${escapeHtml(impactoLabel)}</span>
+            <span class="badge">${escapeHtml(item.code)}</span>
+          </div>
+          <div class="reasonText">${escapeHtml(item.explicacaoCliente)}</div>
+          <div class="reasonAction">${escapeHtml(item.acaoRecomendada)}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderReportGroups(items) {
+  const groups = items.reduce((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = [];
+    acc[item.group].push(item);
+    return acc;
+  }, {});
+
+  const orderedGroups = ["Composição corporal", "Atividade", "Expectativa", "Outros"];
+
+  return orderedGroups
+    .filter((groupName) => groups[groupName] && groups[groupName].length)
+    .map((groupName) => {
+      const groupItems = groups[groupName].slice().sort(sortExplainData);
+      return `
+        <div class="reportGroup">
+          <div class="reportGroupTitle">${escapeHtml(groupName)}</div>
+          ${renderReportReasonList(groupItems)}
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function renderDebugPayload(payload) {
   if (!els.result) return;
 
@@ -408,6 +467,12 @@ function renderResult(result) {
   if (els.resultDate) {
     els.resultDate.textContent = new Date().toLocaleDateString();
   }
+  if (els.reportDate) {
+    els.reportDate.textContent = new Date().toLocaleDateString();
+  }
+  if (els.reportFooterDate) {
+    els.reportFooterDate.textContent = new Date().toLocaleDateString();
+  }
 
   if (!Array.isArray(result?.reasons)) {
     console.warn("[LM] Result reasons is not an array:", result?.reasons);
@@ -431,6 +496,20 @@ function renderResult(result) {
 
   if (els.groupedReasons) {
     els.groupedReasons.innerHTML = renderReasonGroups(sortedExplainItems);
+  }
+
+  if (els.reportScore) {
+    els.reportScore.textContent = String(result.score);
+  }
+  if (els.reportClassification) {
+    els.reportClassification.textContent = result.classification;
+  }
+  if (els.reportTopImpacts) {
+    const topItems = sortedExplainItems.slice(0, 3);
+    els.reportTopImpacts.innerHTML = renderReportReasonList(topItems);
+  }
+  if (els.reportGroups) {
+    els.reportGroups.innerHTML = renderReportGroups(sortedExplainItems);
   }
 
   const reasonSummary = extractReasonCodes(reasonsArray);

@@ -73,6 +73,10 @@ button{
   cursor:pointer;
 }
 
+.secondaryBtn{
+  background:#111827;
+}
+
 .muted{ color:var(--muted); }
 
 .resultLine{
@@ -156,6 +160,154 @@ button{
 .reasonAction{
   color:var(--muted);
   line-height:1.35;
+}
+
+.reportCard{
+  margin-top:12px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  background:#fff;
+}
+
+.reportHeader{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:12px;
+}
+
+.reportMetaLine{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  color:var(--muted);
+  font-size:0.85rem;
+}
+
+.reportScore{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.reportLabel{
+  color:var(--muted);
+  font-size:0.8rem;
+}
+
+.reportValue{
+  font-size:1.1rem;
+  font-weight:700;
+}
+
+.reportSection{
+  margin-top:12px;
+}
+
+.reportSection h4{
+  margin:0 0 8px 0;
+  font-size:0.95rem;
+}
+
+.reportList{
+  margin:0;
+  padding-left:18px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.reportGroups{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.reportGroup{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+}
+
+.reportGroupTitle{
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.reportItem{
+  border-top:1px solid var(--border);
+  padding-top:8px;
+  margin-top:8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.reportItem:first-child{
+  border-top:none;
+  padding-top:0;
+  margin-top:0;
+}
+
+.reportBadgeRow{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.reportDisclaimer{
+  margin:0;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.reportFooter{
+  margin-top:12px;
+  border-top:1px solid var(--border);
+  padding-top:10px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+  color:var(--muted);
+  font-size:0.8rem;
+}
+
+@media print{
+  body{
+    background:#fff;
+    padding:0;
+  }
+
+  .container > .card{
+    display:none;
+  }
+
+  #result{
+    display:block;
+    border:none;
+    padding:0;
+  }
+
+  #report{
+    display:block;
+    border:none;
+    padding:0;
+  }
+
+  #reportBtn,
+  .debug,
+  .penalties,
+  #mainFactor,
+  .subtleTitle,
+  .resultLine,
+  .resultMeta,
+  #topImpacts,
+  #groupedReasons{
+    display:none !important;
+  }
 }
 
 .debug{
