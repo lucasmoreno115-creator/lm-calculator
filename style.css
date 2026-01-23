@@ -79,6 +79,89 @@ button{
 
 .muted{ color:var(--muted); }
 
+.modeToggle{
+  margin-top:16px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  font-size:0.85rem;
+  color:var(--muted);
+}
+
+.modeBtn{
+  border:none;
+  background:none;
+  padding:0;
+  color:var(--accent);
+  font-weight:600;
+  cursor:pointer;
+}
+
+.modeBtn.isActive{
+  color:#111827;
+  cursor:default;
+}
+
+.clientSummary,
+.clientGroups{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.clientCard{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.clientTitle{
+  font-weight:700;
+}
+
+.clientAction{
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.clientDetails{
+  margin-top:10px;
+}
+
+.clientDetails summary{
+  cursor:pointer;
+  font-weight:600;
+}
+
+.uiDisclaimer{
+  margin-top:16px;
+  font-size:0.8rem;
+  color:var(--muted);
+  line-height:1.35;
+  border-top:1px solid var(--border);
+  padding-top:10px;
+}
+
+.uiDisclaimer p{
+  margin:6px 0 0 0;
+}
+
+.uiDisclaimer p:first-child{
+  margin-top:0;
+}
+
+.mode-client .debugOnly{
+  display:none !important;
+}
+
+.mode-debug .clientOnly{
+  display:none !important;
+}
+
 .resultLine{
   display:flex;
   justify-content:space-between;
@@ -314,14 +397,23 @@ button{
   }
 
   #report{
-    display:block;
+    display:block !important;
     border:none;
     padding:0;
+  }
+
+  body.mode-client #report,
+  body.mode-debug #report{
+    display:block !important;
   }
 
   #reportBtn,
   .debug,
   .penalties,
+  .uiDisclaimer,
+  .modeToggle,
+  .clientDetails,
+  .clientOnly,
   #mainFactor,
   .subtleTitle,
   .resultLine,

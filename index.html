@@ -9,12 +9,12 @@
 </head>
 <body>
   <main class="container">
-    <header class="card">
+    <header class="card debugOnly">
       <h1>LM Calculator (Debug)</h1>
       <p class="muted">Interface de QA. Core científico está em <code>/core</code>.</p>
     </header>
 
-    <section class="card">
+    <section class="card debugOnly">
       <h2>Bloco 1 — Composição corporal</h2>
 
       <label for="sex">Sexo</label>
@@ -36,7 +36,7 @@
       <input id="bodyFat" type="number" min="0" max="60" placeholder="Ex: 18">
     </section>
 
-    <section class="card">
+    <section class="card debugOnly">
       <h2>Bloco 2 — Atividade física</h2>
 
       <label for="activityLevel">Nível de atividade (declaração)</label>
@@ -56,7 +56,7 @@
       </label>
     </section>
 
-    <section class="card">
+    <section class="card debugOnly">
       <h2>Bloco 3 — Expectativa</h2>
 
       <label for="expectation">Expectativa de resultado</label>
@@ -89,15 +89,23 @@
 
       <p id="mainFactor" class="muted"></p>
 
-      <h3 class="subtleTitle">O que mais impacta agora</h3>
-      <div id="topImpacts" class="reasonSummary"></div>
+      <h3 class="subtleTitle clientOnly">O que mais impacta agora</h3>
+      <div id="clientTopImpacts" class="clientSummary clientOnly"></div>
 
-      <h3 class="subtleTitle">Detalhamento por área</h3>
-      <div id="groupedReasons" class="reasonGroups"></div>
+      <details id="clientDetails" class="clientDetails clientOnly">
+        <summary>Ver detalhes</summary>
+        <div id="clientGroupedReasons" class="clientGroups"></div>
+      </details>
+
+      <h3 class="subtleTitle debugOnly">O que mais impacta agora (debug)</h3>
+      <div id="topImpacts" class="reasonSummary debugOnly"></div>
+
+      <h3 class="subtleTitle debugOnly">Detalhamento por área</h3>
+      <div id="groupedReasons" class="reasonGroups debugOnly"></div>
 
       <button id="reportBtn" type="button" class="secondaryBtn">Gerar relatório (PDF)</button>
 
-      <section id="report" class="reportCard">
+      <section id="report" class="reportCard debugOnly">
         <header class="reportHeader">
           <div>
             <h3>LM Score</h3>
@@ -161,13 +169,31 @@
         </footer>
       </section>
 
-      <h3 class="subtleTitle">Penalizações por bloco</h3>
-      <div id="penalties" class="penalties"></div>
+      <h3 class="subtleTitle debugOnly">Penalizações por bloco</h3>
+      <div id="penalties" class="penalties debugOnly"></div>
 
-      <details class="debug">
+      <div class="uiDisclaimer">
+        <p>
+          Este relatório é educativo e informativo. Não constitui diagnóstico, tratamento ou prescrição.
+          Não substitui avaliação de um profissional habilitado. Não tome decisões exclusivamente com base neste resultado.
+        </p>
+        <p>Reavaliação recomendada a cada 2–4 semanas.</p>
+        <p>
+          Os resultados dependem de consistência e adesão. Esta ferramenta apoia decisões, mas não garante resultados.
+        </p>
+      </div>
+
+      <details class="debug debugOnly">
         <summary>Debug (JSON)</summary>
         <pre id="debug"></pre>
       </details>
+
+      <div class="modeToggle">
+        <span>Modo:</span>
+        <button type="button" id="modeClientBtn" class="modeBtn" data-mode="client">Cliente</button>
+        <span>|</span>
+        <button type="button" id="modeDebugBtn" class="modeBtn" data-mode="debug">Debug</button>
+      </div>
     </section>
   </main>
 

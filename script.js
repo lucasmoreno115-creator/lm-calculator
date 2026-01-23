@@ -19,9 +19,13 @@ const els = {
   penalties: document.getElementById("penalties"),
   versionLabel: document.getElementById("versionLabel"),
   resultDate: document.getElementById("resultDate"),
+  clientTopImpacts: document.getElementById("clientTopImpacts"),
+  clientGroupedReasons: document.getElementById("clientGroupedReasons"),
   topImpacts: document.getElementById("topImpacts"),
   groupedReasons: document.getElementById("groupedReasons"),
   reportBtn: document.getElementById("reportBtn"),
+  modeClientBtn: document.getElementById("modeClientBtn"),
+  modeDebugBtn: document.getElementById("modeDebugBtn"),
   reportDate: document.getElementById("reportDate"),
   reportScore: document.getElementById("reportScore"),
   reportClassification: document.getElementById("reportClassification"),
@@ -30,6 +34,11 @@ const els = {
   reportFooterDate: document.getElementById("reportFooterDate"),
   debug: document.getElementById("debug"),
 };
+
+let lastResult = null;
+let currentMode = getStoredMode();
+
+applyUIMode(currentMode);
 
 els.calcBtn.addEventListener("click", () => {
   const data = collectFormData();
@@ -41,12 +50,22 @@ els.calcBtn.addEventListener("click", () => {
   }
 
   const result = calculateLMScore(data);
+  lastResult = result;
   renderResult(result);
 });
 
 if (els.reportBtn) {
   els.reportBtn.addEventListener("click", () => {
     window.print();
+  });
+}
+
+if (els.modeClientBtn && els.modeDebugBtn) {
+  els.modeClientBtn.addEventListener("click", () => {
+    setUIMode("client");
+  });
+  els.modeDebugBtn.addEventListener("click", () => {
+    setUIMode("debug");
   });
 }
 
@@ -274,6 +293,30 @@ function buildCodeHistogram(codes) {
   }, {});
 }
 
+function getStoredMode() {
+  const stored = localStorage.getItem("lm_ui_mode");
+  return stored === "debug" ? "debug" : "client";
+}
+
+function applyUIMode(mode) {
+  document.body.classList.remove("mode-client", "mode-debug");
+  document.body.classList.add(mode === "debug" ? "mode-debug" : "mode-client");
+
+  if (els.modeClientBtn && els.modeDebugBtn) {
+    els.modeClientBtn.classList.toggle("isActive", mode !== "debug");
+    els.modeDebugBtn.classList.toggle("isActive", mode === "debug");
+  }
+}
+
+function setUIMode(mode) {
+  currentMode = mode === "debug" ? "debug" : "client";
+  localStorage.setItem("lm_ui_mode", currentMode);
+  applyUIMode(currentMode);
+  if (lastResult) {
+    renderResult(lastResult);
+  }
+}
+
 function getImpactRank(impacto) {
   if (impacto === "alto") return 0;
   if (impacto === "médio") return 1;
@@ -286,6 +329,14 @@ function getGroupLabel(code) {
   if (code.startsWith("ACTIVITY_")) return "Atividade";
   if (code.startsWith("EXPECTATION_")) return "Expectativa";
   return "Outros";
+}
+
+function mapClassificationToClientLabel(classification) {
+  if (classification === "Baixo risco metabólico") return "Atenção baixa";
+  if (classification === "Risco metabólico leve") return "Atenção moderada";
+  if (classification === "Risco metabólico moderado") return "Atenção alta";
+  if (classification === "Alto risco metabólico") return "Atenção alta";
+  return "Atenção";
 }
 
 function buildExplainData(reason, index) {
@@ -325,6 +376,33 @@ function buildExplainData(reason, index) {
   };
 }
 
+function getClientTitle(text) {
+  const [firstSentence] = text.split(".");
+  return firstSentence ? firstSentence.trim() : text;
+}
+
+function buildClientExplainData(reason, index) {
+  const data = buildExplainData(reason, index);
+
+  if (data.impacto === "—") {
+    return {
+      title: "Motivo identificado.",
+      explicacaoCliente: "Motivo identificado.",
+      acaoRecomendada: "Recomendação indisponível nesta versão.",
+      group: data.group,
+      index,
+    };
+  }
+
+  return {
+    title: getClientTitle(data.explicacaoCliente),
+    explicacaoCliente: data.explicacaoCliente,
+    acaoRecomendada: data.acaoRecomendada,
+    group: data.group,
+    index,
+  };
+}
+
 function sortExplainData(a, b) {
   const priorityA = typeof a.prioridade === "number" ? a.prioridade : 99;
   const priorityB = typeof b.prioridade === "number" ? b.prioridade : 99;
@@ -359,6 +437,53 @@ function renderReasonList(items) {
           </div>
           <div class="reasonText">${escapeHtml(item.explicacaoCliente)}</div>
           <div class="reasonAction">${escapeHtml(item.acaoRecomendada)}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderClientList(items) {
+  if (!items.length) {
+    return `<div class="clientCard"><div class="muted">Nenhum motivo identificado.</div></div>`;
+  }
+
+  return items
+    .map((item) => `
+      <div class="clientCard">
+        <div class="clientTitle">${escapeHtml(item.title)}</div>
+        <div class="clientAction">${escapeHtml(item.acaoRecomendada)}</div>
+      </div>
+    `)
+    .join("");
+}
+
+function renderClientGroups(items) {
+  const groups = items.reduce((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = [];
+    acc[item.group].push(item);
+    return acc;
+  }, {});
+
+  const orderedGroups = ["Composição corporal", "Atividade", "Expectativa", "Outros"];
+
+  return orderedGroups
+    .filter((groupName) => groups[groupName] && groups[groupName].length)
+    .map((groupName) => {
+      const groupItems = groups[groupName].slice();
+      return `
+        <div class="reasonGroup">
+          <div class="reasonGroupTitle">${escapeHtml(groupName)}</div>
+          ${groupItems
+            .map(
+              (item) => `
+                <div class="reasonItem">
+                  <div class="reasonText">${escapeHtml(item.explicacaoCliente)}</div>
+                  <div class="reasonAction">${escapeHtml(item.acaoRecomendada)}</div>
+                </div>
+              `
+            )
+            .join("")}
         </div>
       `;
     })
@@ -460,7 +585,10 @@ function renderResult(result) {
   els.result.classList.remove("resultHidden");
 
   els.score.textContent = String(result.score);
-  els.classification.textContent = result.classification;
+  els.classification.textContent =
+    currentMode === "debug"
+      ? result.classification
+      : mapClassificationToClientLabel(result.classification);
   if (els.versionLabel) {
     els.versionLabel.textContent = "LM Score v2.0.0";
   }
@@ -488,6 +616,12 @@ function renderResult(result) {
 
   const explainItems = reasonsArray.map((reason, index) => buildExplainData(reason, index));
   const sortedExplainItems = explainItems.slice().sort(sortExplainData);
+  const clientExplainItems = reasonsArray.map((reason, index) => buildClientExplainData(reason, index));
+  const clientByIndex = clientExplainItems.reduce((acc, item) => {
+    acc[item.index] = item;
+    return acc;
+  }, {});
+  const sortedClientItems = sortedExplainItems.map((item) => clientByIndex[item.index]);
 
   if (els.topImpacts) {
     const topItems = sortedExplainItems.slice(0, 3);
@@ -498,11 +632,23 @@ function renderResult(result) {
     els.groupedReasons.innerHTML = renderReasonGroups(sortedExplainItems);
   }
 
+  if (els.clientTopImpacts) {
+    const topClient = sortedClientItems.slice(0, 3);
+    els.clientTopImpacts.innerHTML = renderClientList(topClient);
+  }
+
+  if (els.clientGroupedReasons) {
+    els.clientGroupedReasons.innerHTML = renderClientGroups(sortedClientItems);
+  }
+
   if (els.reportScore) {
     els.reportScore.textContent = String(result.score);
   }
   if (els.reportClassification) {
-    els.reportClassification.textContent = result.classification;
+    els.reportClassification.textContent =
+      currentMode === "debug"
+        ? result.classification
+        : mapClassificationToClientLabel(result.classification);
   }
   if (els.reportTopImpacts) {
     const topItems = sortedExplainItems.slice(0, 3);
