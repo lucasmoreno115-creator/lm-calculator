@@ -211,6 +211,12 @@ button{
   font-size:0.95rem;
 }
 
+.reportNote{
+  margin:8px 0 0 0;
+  color:var(--muted);
+  line-height:1.35;
+}
+
 .reportList{
   margin:0;
   padding-left:18px;
@@ -275,6 +281,22 @@ button{
   font-size:0.8rem;
 }
 
+.printOnly{
+  display:none;
+}
+
+.notesLines{
+  height:160px;
+  background:repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 24px,
+    #e5e7eb 24px,
+    #e5e7eb 25px
+  );
+  border-radius:8px;
+}
+
 @media print{
   body{
     background:#fff;
@@ -307,6 +329,10 @@ button{
   #topImpacts,
   #groupedReasons{
     display:none !important;
+  }
+
+  .printOnly{
+    display:block !important;
   }
 }
 
