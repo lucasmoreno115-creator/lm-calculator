@@ -216,6 +216,10 @@ button{
   margin:6px 0 0 0;
   color:var(--muted);
   font-size:0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background:#f3f4f6;
+  padding:4px 6px;
+  border-radius:6px;
 }
 
 .bootStatusLine:first-of-type{

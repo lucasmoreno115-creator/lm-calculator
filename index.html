@@ -206,6 +206,11 @@
   </div>
 
   <!-- IMPORTANTE: como o script usa import/export, precisa ser module -->
-  <script type="module" src="./script.js"></script>
+  <script
+    type="module"
+    src="./script.js"
+    onload="(function(){var el=document.getElementById('bootStatus'); if(el){el.textContent='Boot: script carregado (HTML onload)';}})()"
+    onerror="(function(){var el=document.getElementById('bootStatus'); if(el){el.textContent='Boot: ERRO ao carregar ./script.js (HTML onerror)';}})()"
+  ></script>
 </body>
 </html>

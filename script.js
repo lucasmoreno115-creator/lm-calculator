@@ -1,3 +1,10 @@
+try {
+  const statusEl = document.getElementById("bootStatus");
+  if (statusEl) statusEl.textContent = "Boot: script executando (JS top-level)";
+} catch (error) {
+  // noop
+}
+
 /**
  * APP ADAPTER (v0.9 + v1.1 copy + penalties panel)
  * - Não contém ciência do score
@@ -6,9 +13,63 @@
  * - v1.1+: painel de penalizações por bloco (transparência)
  */
 
-import { calculateLMScore } from "./core/lmScoreEngine.js";
-import { LM_COPY_V11 } from "./core/lmCopy_v1_1.js";
-import { LM_REASON_EXPLAIN_V1 } from "./presentation/lmReasonExplain_v1.js";
+let calculateLMScore;
+let LM_COPY_V11;
+let LM_REASON_EXPLAIN_V1;
+
+function renderFatalBootError(message) {
+  const root = document.getElementById("appRoot");
+  if (!root) return;
+  root.innerHTML = `
+    <div class="bootError">
+      <h2>❌ Erro ao carregar a interface</h2>
+      <p class="bootErrorCode">Código: UI-BOOT</p>
+      <p class="bootErrorDetail">${message}</p>
+      <div class="bootErrorActions">
+        <button type="button" id="bootReload">Recarregar</button>
+        <button type="button" id="bootResetMode">Resetar modo</button>
+      </div>
+    </div>
+  `;
+
+  const reloadBtn = document.getElementById("bootReload");
+  const resetBtn = document.getElementById("bootResetMode");
+
+  if (reloadBtn) {
+    reloadBtn.addEventListener("click", () => {
+      window.location.reload();
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      localStorage.removeItem("lm_ui_mode");
+      window.location.reload();
+    });
+  }
+}
+
+try {
+  const coreModule = await import("./core/lmScoreEngine.js");
+  calculateLMScore = coreModule.calculateLMScore;
+  const copyModule = await import("./core/lmCopy_v1_1.js");
+  LM_COPY_V11 = copyModule.LM_COPY_V11;
+  const explainModule = await import("./presentation/lmReasonExplain_v1.js");
+  LM_REASON_EXPLAIN_V1 = explainModule.LM_REASON_EXPLAIN_V1;
+} catch (error) {
+  const message = `Boot: ERRO (JS) - ${error?.message || "Falha ao importar módulos"}`;
+  const statusEl = document.getElementById("bootStatus");
+  if (statusEl) statusEl.textContent = message;
+  renderFatalBootError(message);
+  throw error;
+}
+
+const coreModule = await import("./core/lmScoreEngine.js");
+calculateLMScore = coreModule.calculateLMScore;
+const copyModule = await import("./core/lmCopy_v1_1.js");
+LM_COPY_V11 = copyModule.LM_COPY_V11;
+const explainModule = await import("./presentation/lmReasonExplain_v1.js");
+LM_REASON_EXPLAIN_V1 = explainModule.LM_REASON_EXPLAIN_V1;
 
 const appRoot = document.getElementById("appRoot");
 let bootStage = "Boot: aguardando script...";
@@ -33,6 +94,21 @@ function setBootStatus(text) {
 }
 
 setBootStatus("Boot: script carregado");
+window.setTimeout(() => {
+  if (bootStage === "Boot: aguardando script...") {
+    renderBootError(
+      "UI-SCRIPT-NOT-RUNNING",
+      "Verifique se ./script.js existe e está sendo servido pelo GitHub Pages"
+    );
+  }
+}, 2000);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    setBootStatus("Boot: DOM OK");
+  }, { once: true });
+} else {
+  setBootStatus("Boot: DOM OK");
+}
 const els = {
   calcBtn: document.getElementById("calcBtn"),
   result: document.getElementById("result"),
@@ -65,6 +141,9 @@ let bootTimeoutId = null;
 
 function renderBootError(code = "UI-BOOT", detail = null) {
   if (!appRoot) return;
+  if (code && code.startsWith("UI-")) {
+    setBootStatus(`Boot: ERRO (JS) - ${code}`);
+  }
   appRoot.innerHTML = `
     <div class="bootError">
       <h2>❌ Erro ao carregar a interface</h2>
@@ -159,7 +238,8 @@ function bootUI() {
 try {
   bootUI();
 } catch (error) {
-  renderBootError();
+  setBootStatus(`Boot: ERRO (JS) - ${error?.message || "Falha desconhecida"}`);
+  renderBootError("UI-BOOT", `Boot: ERRO (JS) - ${error?.message || "Falha desconhecida"}`);
 }
 
 // -------------------------------
