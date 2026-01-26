@@ -12,6 +12,8 @@
     <div id="loadingFallback" class="loadingFallback">
       <h1>LM Calculator</h1>
       <p>Carregando...</p>
+      <p class="bootStatusLine">Boot: aguardando script...</p>
+      <p id="bootStatus" class="bootStatusLine"></p>
     </div>
     <main class="container">
       <header class="card debugOnly">
@@ -204,6 +206,6 @@
   </div>
 
   <!-- IMPORTANTE: como o script usa import/export, precisa ser module -->
-  <script type="module" src="script.js"></script>
+  <script type="module" src="./script.js"></script>
 </body>
 </html>

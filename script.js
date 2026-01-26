@@ -11,6 +11,28 @@ import { LM_COPY_V11 } from "./core/lmCopy_v1_1.js";
 import { LM_REASON_EXPLAIN_V1 } from "./presentation/lmReasonExplain_v1.js";
 
 const appRoot = document.getElementById("appRoot");
+let bootStage = "Boot: aguardando script...";
+
+function ensureBootStatusEl() {
+  let statusEl = document.getElementById("bootStatus");
+  if (!statusEl && appRoot) {
+    statusEl = document.createElement("p");
+    statusEl.id = "bootStatus";
+    statusEl.className = "bootStatusLine";
+    appRoot.appendChild(statusEl);
+  }
+  return statusEl;
+}
+
+function setBootStatus(text) {
+  bootStage = text;
+  const statusEl = ensureBootStatusEl();
+  if (statusEl) {
+    statusEl.textContent = text;
+  }
+}
+
+setBootStatus("Boot: script carregado");
 const els = {
   calcBtn: document.getElementById("calcBtn"),
   result: document.getElementById("result"),
@@ -38,13 +60,16 @@ const els = {
 
 let lastResult = null;
 let currentMode = getStoredMode();
+let bootReady = false;
+let bootTimeoutId = null;
 
-function renderBootError() {
+function renderBootError(code = "UI-BOOT", detail = null) {
   if (!appRoot) return;
   appRoot.innerHTML = `
     <div class="bootError">
       <h2>❌ Erro ao carregar a interface</h2>
-      <p class="bootErrorCode">Código: UI-BOOT</p>
+      <p class="bootErrorCode">Código: ${code}</p>
+      ${detail ? `<p class="bootErrorDetail">${detail}</p>` : ""}
       <div class="bootErrorActions">
         <button type="button" id="bootReload">Recarregar</button>
         <button type="button" id="bootResetMode">Resetar modo</button>
@@ -70,16 +95,22 @@ function renderBootError() {
 }
 
 function bootUI() {
+  setBootStatus("Boot: iniciando");
+  bootTimeoutId = window.setTimeout(() => {
+    if (!bootReady) {
+      renderBootError("UI-BOOT-TIMEOUT", `Última etapa: ${bootStage}`);
+    }
+  }, 2000);
+
+  setBootStatus("Boot: carregando modo");
   applyUIMode(currentMode);
 
+  setBootStatus("Boot: preparando UI");
   if (!els.calcBtn) {
     throw new Error("[LM] Missing calculator button");
   }
 
-  const loadingFallback = document.getElementById("loadingFallback");
-  if (loadingFallback) {
-    loadingFallback.remove();
-  }
+  setBootStatus("Boot: renderizando");
 
   els.calcBtn.addEventListener("click", () => {
     try {
@@ -112,6 +143,16 @@ function bootUI() {
     els.modeDebugBtn.addEventListener("click", () => {
       setUIMode("debug");
     });
+  }
+
+  setBootStatus("Boot: pronto");
+  bootReady = true;
+  if (bootTimeoutId) {
+    window.clearTimeout(bootTimeoutId);
+  }
+  const loadingFallback = document.getElementById("loadingFallback");
+  if (loadingFallback) {
+    loadingFallback.remove();
   }
 }
 

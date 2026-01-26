@@ -186,6 +186,12 @@ button{
   font-size:0.85rem;
 }
 
+.bootErrorDetail{
+  color:var(--muted);
+  margin:0 0 16px 0;
+  font-size:0.85rem;
+}
+
 .bootErrorActions{
   display:flex;
   gap:10px;
@@ -195,6 +201,25 @@ button{
 .bootErrorActions button{
   width:auto;
   margin:0;
+}
+
+.loadingFallback{
+  max-width:520px;
+  margin:40px auto;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+}
+
+.bootStatusLine{
+  margin:6px 0 0 0;
+  color:var(--muted);
+  font-size:0.85rem;
+}
+
+.bootStatusLine:first-of-type{
+  margin-top:10px;
 }
 
 .resultLine{
