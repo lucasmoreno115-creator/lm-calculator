@@ -76,6 +76,11 @@ function bootUI() {
     throw new Error("[LM] Missing calculator button");
   }
 
+  const loadingFallback = document.getElementById("loadingFallback");
+  if (loadingFallback) {
+    loadingFallback.remove();
+  }
+
   els.calcBtn.addEventListener("click", () => {
     try {
       const data = collectFormData();
